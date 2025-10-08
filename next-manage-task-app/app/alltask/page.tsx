@@ -39,6 +39,40 @@ export default function Page() {
             }
         }
     })
+
+    // สร้างฟังก์ชันสำหรับลบข้อมูลออกจากตาราง task_tb
+    async function handleDeleteTaskClick(id: string, image_url: string) {
+        // แสดง Confirm dialog ก่อนลบข้อมูล
+        if (!confirm("คุณต้องการลบข้อมูลใช่หรือไม่")) {
+            // ลบรูปออกจาก Storage (ถ้ามีรูป)
+            const image_name = image_url?.split("/").pop() as string;
+
+            const { data, error } = await supabase.storage
+                .from('task_bk')
+                .remove([image_name]);
+            if (error) {
+                alert("พบปัญหาในการลบรูปภาพจาก Supabase");
+                console.log(error.message);
+                return;
+            }
+        }
+
+        // ลบขอมูลออกจากตารางใน supabase  
+        const { data, error } = await supabase
+            .from('task_tb')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert("พบปัญหาในการลบข้อมูลจาก Supabase");
+            console.log(error.message);
+            return;
+        }
+        // ลบข้อมูลออกจากราการที่แสดงบนหน้าจอ 
+        setTasks(tasks.filter((task) => task.id !== id));
+
+
+    }
     return (
         <main>
             <div className="flex flex-col w-3/4 mx-auto">
@@ -88,8 +122,8 @@ export default function Page() {
                             <td className="border border-black ">{new Date(task.created_at).toLocaleString()}</td>
                             <td className="border border-black ">{new Date(task.update_at).toLocaleString()}</td>
                             <td className="border border-black ">
-                                <Link href="#">แก้ไข</Link>
-                                <button>ลบ</button>
+                                <Link className='mr-2 text-green-500 font-bold' href={'/edittask/${task.id}'}>แก้ไข</Link>
+                                <button onClick={() => handleDeleteTaskClick(task.id, task.image_url)} className='text-red-500 font-bold cursor-pointor'>ลบ</button>
                             </td>
                         </tr>
                     ))}
